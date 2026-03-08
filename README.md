@@ -7,7 +7,7 @@ A modern, vibrant website for Bill's Auto Wash, featuring a premium car wash exp
 - **Hero Section**: Animated rainbow wash with colorful foam and water jets
 - **Services**: Basic, Deluxe, and Rainbow Wash options
 - **Pricing**: Simple pricing cards for all services
-- **Gallery**: Photo gallery showcasing the wash process
+- **Gallery**: Photo gallery showcasing the wash process (with high-quality images and colorful captions)
 - **Reviews**: Customer testimonials with star ratings (dynamic - users can add reviews)
 - **Location & Hours**: Embedded map and business hours
 - **Membership**: Unlimited wash plans
