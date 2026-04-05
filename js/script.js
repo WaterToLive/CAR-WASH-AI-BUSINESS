@@ -3,6 +3,7 @@ class SimpleDB {
     constructor() {
         this.bookings = this.load('bookings') || [];
         this.reviews = this.load('reviews') || [];
+        this.services = this.load('services') || defaultServices;
         this.reviewSubmitted = this.load('reviewSubmitted') || false;
     }
 
@@ -49,6 +50,18 @@ class SimpleDB {
         return this.reviewSubmitted;
     }
 
+    addService(service) {
+        service.id = Date.now();
+        this.services.push(service);
+        this.save('services', this.services);
+        this.displayServices();
+        return service.id;
+    }
+
+    getServices() {
+        return this.services;
+    }
+
     displayReviews() {
         const reviewCards = document.querySelector('.review-cards');
         if (!reviewCards) return;
@@ -72,6 +85,62 @@ class SimpleDB {
             `;
             reviewCards.appendChild(reviewCard);
         });
+    }
+
+    displayServices() {
+        const serviceCards = document.querySelector('.service-cards');
+        if (!serviceCards) return;
+
+        // Clear existing services
+        serviceCards.innerHTML = '';
+
+        this.services.forEach(service => {
+            const serviceCard = document.createElement('div');
+            serviceCard.className = 'card';
+            if (service.name === 'Rainbow Wash') {
+                serviceCard.classList.add('rainbow-card');
+            }
+            serviceCard.innerHTML = `
+                <div class="card-icon">
+                    <i class="${service.icon}"></i>
+                </div>
+                <h3>${service.name}</h3>
+                <p>${service.description}</p>
+            `;
+            serviceCards.appendChild(serviceCard);
+        });
+
+        // Also update pricing cards
+        const pricingCards = document.querySelector('.pricing-cards');
+        if (pricingCards) {
+            pricingCards.innerHTML = '';
+
+            this.services.forEach(service => {
+                const pricingCard = document.createElement('div');
+                pricingCard.className = 'card';
+                if (service.name === 'Rainbow Wash') {
+                    pricingCard.classList.add('rainbow-card');
+                }
+                pricingCard.innerHTML = `
+                    <h3>${service.name}</h3>
+                    <div class="price">$${service.price}</div>
+                    <ul>
+                        ${this.getServiceFeatures(service.name)}
+                    </ul>
+                    <a href="#booking" class="btn btn-secondary">Book Now</a>
+                `;
+                pricingCards.appendChild(pricingCard);
+            });
+        }
+    }
+
+    getServiceFeatures(serviceName) {
+        const features = {
+            'Basic Wash': ['Exterior wash', 'Soap and rinse', 'Quick service'],
+            'Deluxe Wash': ['Exterior wash', 'Interior vacuum', 'Tire shine', 'Dashboard wipe'],
+            'Rainbow Wash': ['All Deluxe features', 'Colorful foam', 'Rainbow lighting', 'Water splash effects']
+        };
+        return features[serviceName] ? features[serviceName].map(feature => `<li>${feature}</li>`).join('') : '';
     }
 }
 
@@ -300,7 +369,20 @@ function addReviewForm() {
 // Initialize reviews display and add review form
 document.addEventListener('DOMContentLoaded', function() {
     db.displayReviews();
+    db.displayServices();
     addReviewForm();
+
+    // Populate service select options
+    const serviceSelect = document.getElementById('service');
+    if (serviceSelect) {
+        serviceSelect.innerHTML = '<option value="">Select Service</option>';
+        db.getServices().forEach(service => {
+            const option = document.createElement('option');
+            option.value = service.name.toLowerCase().replace(' ', '-');
+            option.textContent = service.name;
+            serviceSelect.appendChild(option);
+        });
+    }
 
     // Admin panel functionality
     document.getElementById('show-bookings').addEventListener('click', function() {
@@ -321,6 +403,47 @@ document.addEventListener('DOMContentLoaded', function() {
             <pre>${JSON.stringify(reviews, null, 2)}</pre>
         `;
         document.getElementById('admin').style.display = 'block';
+    });
+
+    // Add show-services button
+    const adminContainer = document.querySelector('#admin .container');
+    const showServicesBtn = document.createElement('button');
+    showServicesBtn.id = 'show-services';
+    showServicesBtn.className = 'btn btn-secondary';
+    showServicesBtn.textContent = 'View Services';
+    adminContainer.insertBefore(showServicesBtn, document.getElementById('admin-content'));
+
+    showServicesBtn.addEventListener('click', function() {
+        const services = db.getServices();
+        const content = document.getElementById('admin-content');
+        content.innerHTML = `
+            <h3>All Services</h3>
+            <pre>${JSON.stringify(services, null, 2)}</pre>
+            <h4>Add New Service</h4>
+            <form id="add-service-form">
+                <input type="text" name="name" placeholder="Service Name" required>
+                <input type="text" name="description" placeholder="Description" required>
+                <input type="number" name="price" placeholder="Price" required>
+                <input type="text" name="icon" placeholder="Icon Class (e.g., fas fa-car)" required>
+                <button type="submit" class="btn btn-primary">Add Service</button>
+            </form>
+        `;
+        document.getElementById('admin').style.display = 'block';
+
+        // Handle add service form
+        document.getElementById('add-service-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const service = {
+                name: formData.get('name'),
+                description: formData.get('description'),
+                price: parseFloat(formData.get('price')),
+                icon: formData.get('icon')
+            };
+            db.addService(service);
+            showCustomPopup('Service added successfully!', 'success');
+            this.reset();
+        });
     });
 });
 
